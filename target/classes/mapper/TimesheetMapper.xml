@@ -1,0 +1,117 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.orjujeng.timesheet.mapper.TimesheetMapper">
+	<insert id="addNewTimeSheet" parameterType = "com.orjujeng.timesheet.entity.TimesheetInfo" useGeneratedKeys="true" keyColumn="seq_id" keyProperty="seqId">
+    insert into timesheet_info(
+    start_date,
+    end_date,
+    except_finish_date,
+    bank_holiday_date,
+    work_days,
+    bank_holiday_days,
+    finished) values 
+    (
+    #{startDate},
+    #{endDate},
+    #{exceptFinishDate},
+    #{bankHolidayDate},
+    #{workDays},
+    #{bankHolidayDays},
+    #{finished});
+ 	</insert>
+ 	
+ <insert id ="addTimeInfoDetail" parameterType="java.util.List" useGeneratedKeys="true">
+ 		insert timesheet_info_detail
+    (   
+        seq_id,
+        start_date,
+        end_date,
+        except_finish_date,
+        bank_holiday_date,
+        member_id,
+        member_name,
+        account_num,
+        annual_leaving_date,
+        sick_leaving_date,
+        work_days,
+        bank_holiday_days,
+        act_work_days,
+        annual_leaving_days,
+        sick_leaving_days,
+        finished
+    )
+    values
+    <foreach collection="list" item="item" index= "index" separator =",">
+    (
+        #{seqId},
+        #{item.startDate},
+        #{item.endDate},
+        #{item.exceptFinishDate},
+        #{item.bankHolidayDate},
+        #{item.memberId},
+        #{item.memberName},
+        #{item.accountNum},
+        #{item.annualLeavingDate},
+        #{item.sickLeavingDate},
+        #{item.workDays},
+        #{item.bankHolidayDays},
+        #{item.actWorkDays},
+        #{item.annualLeavingDays},
+        #{item.sickLeavingDays},
+        #{item.finished}
+    )
+    </foreach>
+ </insert>
+ 
+ 
+ <select id="getTimesheetInfoList" resultType="com.orjujeng.timesheet.entity.TimesheetInfo">
+ 	select * from timesheet_info
+ 	<where>
+  		<if test = "seqId!=null">
+  		seq_id  = #{seqId} 
+  		</if>
+  		<if test = "inProgress!=null">
+  		and finished  = #{inProgress} 
+  		</if>
+  	</where>
+ 	order by seq_id desc;
+ </select>
+ 
+ <select id="getTimesheetInfoDetailList" resultType="com.orjujeng.timesheet.entity.TimesheetInfoDetail">
+ 	select * from timesheet_info_detail
+ 	<where>
+  		<if test = "seqId!=null">
+  		seq_id  = #{seqId} 
+  		</if>
+  	</where>
+ 	order by finished desc;
+ </select>
+ <update id="updateTimesheetInfoBySeqId" parameterType="com.orjujeng.timesheet.entity.TimesheetInfo">
+ 	update timesheet_info 
+ 	set finished = #{finished}
+ 	where seq_id = #{seqId};
+ </update>
+ 
+ <update id="updateTimesheetInfoDetailBySeqId" parameterType="com.orjujeng.timesheet.entity.TimesheetInfoDetail">
+ 	update timesheet_info_detail 
+ 	set finished = #{finished},act_work_days = #{actWorkDays}
+ 	where id = #{id};
+ </update>
+ 
+ <update id="updateTimesheetInfoDetailById" parameterType="com.orjujeng.timesheet.entity.TimesheetInfoDetail">
+ 	update timesheet_info_detail 
+ 	set annual_leaving_date = #{annualLeavingDate},
+ 	sick_leaving_date = #{sickLeavingDate},
+ 	annual_leaving_days=#{annualLeavingDays},
+ 	sick_leaving_days=#{sickLeavingDays}
+ 	where id = #{id};
+ </update>
+ 
+  <update id="updateTimesheetFinshedStatusById" parameterType="com.orjujeng.timesheet.entity.TimesheetInfoDetail">
+ 	update timesheet_info_detail 
+ 	set finished = #{finished}
+ 	where id = #{id};
+ </update>
+ 
+</mapper>
