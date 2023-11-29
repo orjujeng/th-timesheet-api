@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,8 @@ import com.orjujeng.timesheet.utils.ResultCode;
 public class TimesheetServiceImpl implements TimesheetService{
 	@Autowired
 	TimesheetMapper timesheetMapper;
+	@Autowired
+	RabbitTemplate rabbitTemplate;
 	@Override
 	@Transactional
 	public Result newTimesheet(List<NewTimesheetDTO> newTimesheetDTO) {
@@ -45,8 +48,11 @@ public class TimesheetServiceImpl implements TimesheetService{
 		timesheetMapper.addNewTimeSheet(timesheetInfo);
 		Integer seqId = timesheetInfo.getSeqId();
 		Integer num = timesheetMapper.addTimeInfoDetail(seqId,newTimesheetDTO);
+		rabbitTemplate.convertAndSend("newTimesheetExchange","newTimesheet",seqId);
 		return Result.successWithMsg(num + " row has been added", null);
 	}
+	
+	
 	@Override
 	public Result getTimesheetInfo(String seqId, String finished) throws ParseException {
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -163,11 +169,12 @@ public class TimesheetServiceImpl implements TimesheetService{
 			
 			Integer annualLeavingDays = timesheetInfoDetail.getAnnualLeavingDays()==null||timesheetInfoDetail.getAnnualLeavingDays().equals("null")||timesheetInfoDetail.getAnnualLeavingDays().equals("")?0:Integer.parseInt(timesheetInfoDetail.getAnnualLeavingDays());
 			Integer sickLeavingDays = timesheetInfoDetail.getSickLeavingDays()==null||timesheetInfoDetail.getSickLeavingDays().equals("null")||timesheetInfoDetail.getSickLeavingDays().equals("")?0:Integer.parseInt(timesheetInfoDetail.getSickLeavingDays());
-			Integer actWorkDays = Integer.parseInt(timesheetInfoDetail.getWorkDays()) - annualLeavingDays - sickLeavingDays;
+			Integer actWorkDays = Integer.parseInt(timesheetInfoDetail.getWorkDays()) - annualLeavingDays - sickLeavingDays- Integer.parseInt(timesheetInfoDetail.getBankHolidayDays());
 			timesheetInfoDetail.setActWorkDays(actWorkDays.toString()); 
 			timesheetInfoDetail.setFinished("Y");
 			timesheetMapper.updateTimesheetInfoDetailBySeqId(timesheetInfoDetail);
 		}
+		rabbitTemplate.convertAndSend("finishTimesheetExchange", "finishTimesheet",seqId);
 		return Result.success(null);
 	}
 	
@@ -183,6 +190,8 @@ public class TimesheetServiceImpl implements TimesheetService{
 		timesheetMapper.updateTimesheetFinshedStatusById(timesheetInfoDetail);
 		return Result.success(null);
 	}
+	
+	
 	@Override
 	@Transactional
 	public Result openTimesheet(String seqId) {

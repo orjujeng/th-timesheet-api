@@ -27,5 +27,4 @@ public class DateUtils {
 	        }
 	        return list.size();
 	    }
-
 }
